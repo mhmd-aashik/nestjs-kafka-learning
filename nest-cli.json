@@ -1,8 +1,41 @@
 {
   "$schema": "https://json.schemastore.org/nest-cli",
   "collection": "@nestjs/schematics",
-  "sourceRoot": "src",
+  "sourceRoot": "apps/nestjs-kafka-learning/src",
   "compilerOptions": {
-    "deleteOutDir": true
+    "deleteOutDir": true,
+    "webpack": true,
+    "tsConfigPath": "apps/nestjs-kafka-learning/tsconfig.app.json"
+  },
+  "monorepo": true,
+  "root": "apps/nestjs-kafka-learning",
+  "projects": {
+    "inventory-service": {
+      "type": "application",
+      "root": "apps/inventory-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/inventory-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/inventory-service/tsconfig.app.json"
+      }
+    },
+    "notification-service": {
+      "type": "application",
+      "root": "apps/notification-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/notification-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/notification-service/tsconfig.app.json"
+      }
+    },
+    "order-api": {
+      "type": "application",
+      "root": "apps/order-api",
+      "entryFile": "main",
+      "sourceRoot": "apps/order-api/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/order-api/tsconfig.app.json"
+      }
+    }
   }
 }
