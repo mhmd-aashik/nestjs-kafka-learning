@@ -9,6 +9,9 @@ import type { OrderCreatedEvent } from './order-created-event.interface';
 
 @Controller()
 export class InventoryController {
+  private readonly instanceName =
+    process.env.INSTANCE_NAME ?? 'inventory-default';
+
   @EventPattern('order.created')
   handleOrderCreated(
     @Payload() event: OrderCreatedEvent,
@@ -18,19 +21,20 @@ export class InventoryController {
     const topic = context.getTopic();
     const partition = context.getPartition();
 
-    console.log('-----------------------------');
-    console.log('Order created event received');
+    console.log('--------------------------------');
+    console.log('Instance:', this.instanceName);
     console.log('Topic:', topic);
     console.log('Partition:', partition);
     console.log('Offset:', message.offset);
-    console.log('Event:', event);
+    console.log('Order ID:', event.data.orderId);
+    console.log('Product ID:', event.data.productId);
+    console.log('Quantity:', event.data.quantity);
 
     console.log(
-      `Reserving ${event.data.quantity} unit(s) of ` +
-        `${event.data.productId}`,
+      `[${this.instanceName}] Inventory reserved for order ` +
+        event.data.orderId,
     );
 
-    console.log(`Inventory reserved for order ${event.data.orderId}`);
-    console.log('-----------------------------');
+    console.log('--------------------------------');
   }
 }

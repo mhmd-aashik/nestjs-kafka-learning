@@ -2,7 +2,9 @@ import { NestFactory } from '@nestjs/core';
 import { InventoryServiceModule } from './inventory-service.module';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 
-async function bootstrap() {
+async function bootstrap(): Promise<void> {
+  const instanceName = process.env.INSTANCE_NAME ?? 'inventory-default';
+
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(
     InventoryServiceModule,
     {
@@ -20,6 +22,6 @@ async function bootstrap() {
   );
   await app.listen();
 
-  console.log('Inventory Service connected to Kafka');
+  console.log(`${instanceName} connected to Kafka`);
 }
 void bootstrap();
