@@ -24,6 +24,21 @@ interface OrderCreatedEvent {
   };
 }
 
+interface PublishOrderEventInput {
+  orderId: string;
+  status: string;
+}
+
+interface OrderStatusChangedEvent {
+  eventId: string;
+  eventType: 'order.status-changed';
+  occurredAt: string;
+  data: {
+    orderId: string;
+    status: string;
+  };
+}
+
 @Injectable()
 export class OrdersService implements OnModuleInit, OnModuleDestroy {
   constructor(
@@ -67,6 +82,35 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     return {
       message: 'Order created event published',
       orderId,
+    };
+  }
+
+  async publishOrderStatus(input: PublishOrderEventInput): Promise<{
+    message: string;
+    orderId: string;
+    status: string;
+  }> {
+    const event: OrderStatusChangedEvent = {
+      eventId: randomUUID(),
+      eventType: 'order.status-changed',
+      occurredAt: new Date().toISOString(),
+      data: {
+        orderId: input.orderId,
+        status: input.status,
+      },
+    };
+
+    await lastValueFrom(
+      this.kafkaClient.emit('order.status-changed', {
+        key: input.orderId,
+        value: event,
+      }),
+    );
+
+    return {
+      message: 'Order status event published',
+      orderId: input.orderId,
+      status: input.status,
     };
   }
 }

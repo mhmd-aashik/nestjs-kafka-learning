@@ -5,7 +5,10 @@ import {
   KafkaContext,
   Payload,
 } from '@nestjs/microservices';
-import type { OrderCreatedEvent } from './order-created-event.interface';
+import type {
+  OrderCreatedEvent,
+  OrderStatusChangedEvent,
+} from './order-created-event.interface';
 
 @Controller()
 export class InventoryController {
@@ -36,5 +39,24 @@ export class InventoryController {
     );
 
     console.log('--------------------------------');
+  }
+
+  @EventPattern('order.status-changed')
+  handleOrderStatusChanged(
+    @Payload() event: OrderStatusChangedEvent,
+    @Ctx() context: KafkaContext,
+  ): void {
+    const message = context.getMessage();
+    const partition = context.getPartition();
+
+    console.log('================================');
+    console.log('Instance:', this.instanceName);
+    console.log('Event:', event.eventType);
+    console.log('Order ID:', event.data.orderId);
+    console.log('Status:', event.data.status);
+    console.log('Partition:', partition);
+    console.log('Offset:', message.offset);
+    console.log('Kafka key:', message.key?.toString());
+    console.log('================================');
   }
 }
