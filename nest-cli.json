@@ -19,6 +19,15 @@
         "tsConfigPath": "apps/inventory-service/tsconfig.app.json"
       }
     },
+    "kafka-contracts": {
+      "type": "library",
+      "root": "libs/kafka-contracts",
+      "entryFile": "index",
+      "sourceRoot": "libs/kafka-contracts/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/kafka-contracts/tsconfig.lib.json"
+      }
+    },
     "notification-service": {
       "type": "application",
       "root": "apps/notification-service",

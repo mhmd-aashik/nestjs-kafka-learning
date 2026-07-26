@@ -1,3 +1,4 @@
+import { KafkaTopics } from '@app/kafka-contracts';
 import {
   Inject,
   Injectable,
@@ -15,7 +16,7 @@ interface CreateOrderInput {
 
 interface OrderCreatedEvent {
   eventId: string;
-  eventType: 'order.created';
+  eventType: typeof KafkaTopics.ORDER_CREATED;
   occurredAt: string;
   data: {
     orderId: string;
@@ -31,7 +32,7 @@ interface PublishOrderEventInput {
 
 interface OrderStatusChangedEvent {
   eventId: string;
-  eventType: 'order.status-changed';
+  eventType: typeof KafkaTopics.ORDER_STATUS_CHANGED;
   occurredAt: string;
   data: {
     orderId: string;
@@ -63,7 +64,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
 
     const event: OrderCreatedEvent = {
       eventId: randomUUID(),
-      eventType: 'order.created',
+      eventType: KafkaTopics.ORDER_CREATED,
       occurredAt: new Date().toISOString(),
       data: {
         orderId,
@@ -73,7 +74,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     };
 
     await lastValueFrom(
-      this.kafkaClient.emit('order.created', {
+      this.kafkaClient.emit(KafkaTopics.ORDER_CREATED, {
         key: orderId,
         value: event,
       }),
@@ -92,7 +93,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
   }> {
     const event: OrderStatusChangedEvent = {
       eventId: randomUUID(),
-      eventType: 'order.status-changed',
+      eventType: KafkaTopics.ORDER_STATUS_CHANGED,
       occurredAt: new Date().toISOString(),
       data: {
         orderId: input.orderId,
@@ -101,7 +102,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     };
 
     await lastValueFrom(
-      this.kafkaClient.emit('order.status-changed', {
+      this.kafkaClient.emit(KafkaTopics.ORDER_STATUS_CHANGED, {
         key: input.orderId,
         value: event,
       }),
@@ -123,7 +124,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
 
     const event: OrderCreatedEvent = {
       eventId: randomUUID(),
-      eventType: 'order.created',
+      eventType: KafkaTopics.ORDER_CREATED,
       occurredAt: new Date().toISOString(),
       data: {
         orderId,
@@ -137,9 +138,13 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
       value: event,
     };
 
-    await lastValueFrom(this.kafkaClient.emit('order.created', kafkaRecord));
+    await lastValueFrom(
+      this.kafkaClient.emit(KafkaTopics.ORDER_CREATED, kafkaRecord),
+    );
 
-    await lastValueFrom(this.kafkaClient.emit('order.created', kafkaRecord));
+    await lastValueFrom(
+      this.kafkaClient.emit(KafkaTopics.ORDER_CREATED, kafkaRecord),
+    );
 
     return {
       message: 'Same event published twice',

@@ -14,20 +14,24 @@ import {
   type OrderStatusChangedEvent,
 } from './order-created-event.interface';
 import { EventIdempotencyService } from './event-idempotency.service';
+import { KafkaTopics } from '@app/kafka-contracts';
+import { ConfigService } from '@nestjs/config';
 
 @Controller()
 export class InventoryController {
   private readonly instanceName =
     process.env.INSTANCE_NAME ?? 'inventory-default';
 
-  private readonly maxRetries = 3;
-
+  private get maxRetries(): number {
+    return this.configService.get<number>('INVENTORY_MAX_RETRIES', 3);
+  }
   constructor(
     private readonly retryPublisher: InventoryRetryPublisher,
     private readonly eventIdempotencyService: EventIdempotencyService,
+    private readonly configService: ConfigService,
   ) {}
 
-  @EventPattern('order.created')
+  @EventPattern(KafkaTopics.ORDER_CREATED)
   async handleOrderCreated(
     @Payload() event: OrderCreatedEvent,
     @Ctx() context: KafkaContext,
@@ -35,7 +39,7 @@ export class InventoryController {
     await this.processOrderCreated(event, context);
   }
 
-  @EventPattern('order.created.retry')
+  @EventPattern(KafkaTopics.ORDER_CREATED_RETRY)
   async handleOrderCreatedRetry(
     @Payload() event: OrderCreatedEvent,
     @Ctx() context: KafkaContext,
@@ -201,7 +205,7 @@ export class InventoryController {
     return 0;
   }
 
-  @EventPattern('order.status-changed')
+  @EventPattern(KafkaTopics.ORDER_STATUS_CHANGED)
   handleOrderStatusChanged(
     @Payload()
     event: OrderStatusChangedEvent,

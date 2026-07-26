@@ -21,6 +21,13 @@
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
-    "paths": {}
+    "paths": {
+      "@app/kafka-contracts": [
+        "libs/kafka-contracts/src"
+      ],
+      "@app/kafka-contracts/*": [
+        "libs/kafka-contracts/src/*"
+      ]
+    }
   }
 }

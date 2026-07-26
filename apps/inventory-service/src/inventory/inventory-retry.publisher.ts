@@ -10,6 +10,7 @@ import type { ClientKafkaProxy } from '@nestjs/microservices';
 import { lastValueFrom } from 'rxjs';
 
 import { OrderCreatedEvent } from './order-created-event.interface';
+import { KafkaTopics } from '@app/kafka-contracts';
 
 interface RetryPublishOptions {
   event: OrderCreatedEvent;
@@ -40,7 +41,7 @@ export class InventoryRetryPublisher implements OnModuleInit, OnModuleDestroy {
 
   async publishRetry(options: RetryPublishOptions): Promise<void> {
     await lastValueFrom(
-      this.kafkaClient.emit('order.created.retry', {
+      this.kafkaClient.emit(KafkaTopics.ORDER_CREATED_RETRY, {
         key: options.orderId,
         value: options.event,
         headers: {
@@ -58,7 +59,7 @@ export class InventoryRetryPublisher implements OnModuleInit, OnModuleDestroy {
 
   async publishDlq(options: DlqPublishOptions): Promise<void> {
     await lastValueFrom(
-      this.kafkaClient.emit('order.created.dlq', {
+      this.kafkaClient.emit(KafkaTopics.ORDER_CREATED_DLQ, {
         key: options.orderId,
         value: options.event,
         headers: {
