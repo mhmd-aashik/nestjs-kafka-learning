@@ -4,6 +4,7 @@ import { InventoryController } from './inventory.controller';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { InventoryRetryPublisher } from './inventory-retry.publisher';
 import { EventIdempotencyService } from './event-idempotency.service';
+import { InventoryLifecycleService } from './inventory-lifecycle.service';
 
 @Module({
   imports: [
@@ -22,6 +23,10 @@ import { EventIdempotencyService } from './event-idempotency.service';
     ]),
   ],
   controllers: [InventoryController],
-  providers: [InventoryRetryPublisher, EventIdempotencyService],
+  providers: [
+    InventoryRetryPublisher,
+    EventIdempotencyService,
+    InventoryLifecycleService,
+  ],
 })
 export class InventoryModule {}

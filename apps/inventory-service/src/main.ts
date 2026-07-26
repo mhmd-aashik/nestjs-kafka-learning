@@ -16,6 +16,24 @@ async function bootstrap(): Promise<void> {
         },
         consumer: {
           groupId: 'inventory-consumer-group',
+
+          /*
+           * Broker removes this consumer when it does
+           * not receive heartbeats within this period.
+           */
+          sessionTimeout: 30_000,
+
+          /*
+           * Heartbeat interval must remain lower than
+           * the session timeout.
+           */
+          heartbeatInterval: 3_000,
+
+          /*
+           * Maximum time allowed for members to rejoin
+           * while a consumer-group rebalance occurs.
+           */
+          rebalanceTimeout: 60_000,
         },
 
         // Disable KafkaJS automatic offset commits.
@@ -25,8 +43,13 @@ async function bootstrap(): Promise<void> {
       },
     },
   );
+
+  app.enableShutdownHooks();
+
   await app.listen();
 
   console.log(`${instanceName} connected to Kafka`);
+  console.log('Automatic offset commits disabled');
+  console.log('Shutdown hooks enabled');
 }
 void bootstrap();
