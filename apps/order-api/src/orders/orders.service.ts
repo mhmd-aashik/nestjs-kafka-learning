@@ -113,4 +113,38 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
       status: input.status,
     };
   }
+
+  async publishDuplicateOrderCreated(): Promise<{
+    message: string;
+    eventId: string;
+    orderId: string;
+  }> {
+    const orderId = randomUUID();
+
+    const event: OrderCreatedEvent = {
+      eventId: randomUUID(),
+      eventType: 'order.created',
+      occurredAt: new Date().toISOString(),
+      data: {
+        orderId,
+        productId: 'DUPLICATE-TEST-PRODUCT',
+        quantity: 2,
+      },
+    };
+
+    const kafkaRecord = {
+      key: orderId,
+      value: event,
+    };
+
+    await lastValueFrom(this.kafkaClient.emit('order.created', kafkaRecord));
+
+    await lastValueFrom(this.kafkaClient.emit('order.created', kafkaRecord));
+
+    return {
+      message: 'Same event published twice',
+      eventId: event.eventId,
+      orderId,
+    };
+  }
 }

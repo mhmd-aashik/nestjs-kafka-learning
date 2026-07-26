@@ -22,6 +22,11 @@ export class OrdersController {
     });
   }
 
+  @Post('test/duplicate')
+  publishDuplicateOrderCreated() {
+    return this.ordersService.publishDuplicateOrderCreated();
+  }
+
   @Post(':orderId/events')
   publishOrderStatus(
     @Param('orderId') orderId: string,

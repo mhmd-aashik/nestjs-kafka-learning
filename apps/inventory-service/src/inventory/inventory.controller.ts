@@ -13,6 +13,7 @@ import {
   type OrderCreatedEvent,
   type OrderStatusChangedEvent,
 } from './order-created-event.interface';
+import { EventIdempotencyService } from './event-idempotency.service';
 
 @Controller()
 export class InventoryController {
@@ -21,7 +22,10 @@ export class InventoryController {
 
   private readonly maxRetries = 3;
 
-  constructor(private readonly retryPublisher: InventoryRetryPublisher) {}
+  constructor(
+    private readonly retryPublisher: InventoryRetryPublisher,
+    private readonly eventIdempotencyService: EventIdempotencyService,
+  ) {}
 
   @EventPattern('order.created')
   async handleOrderCreated(
@@ -52,15 +56,27 @@ export class InventoryController {
     console.log('Topic:', context.getTopic());
     console.log('Partition:', context.getPartition());
     console.log('Offset:', message.offset);
-    console.log('Kafka key:', message.key?.toString());
-    console.log('Retry count:', retryCount);
+    console.log('Event ID:', event.eventId);
     console.log('Order ID:', event.data.orderId);
     console.log('Product ID:', event.data.productId);
+    console.log('Retry count:', retryCount);
+
+    if (this.eventIdempotencyService.hasProcessed(event.eventId)) {
+      console.warn(`Duplicate event skipped: ${event.eventId}`);
+
+      console.log('--------------------------------');
+
+      return;
+    }
 
     try {
       await this.reserveInventory(event);
 
+      this.eventIdempotencyService.markAsProcessed(event.eventId);
+
       console.log(`Inventory reserved for order ` + event.data.orderId);
+
+      console.log(`Event marked as processed: ` + event.eventId);
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown inventory error';

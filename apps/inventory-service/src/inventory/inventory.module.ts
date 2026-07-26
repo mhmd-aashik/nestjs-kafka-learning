@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { InventoryController } from './inventory.controller';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { InventoryRetryPublisher } from './inventory-retry.publisher';
+import { EventIdempotencyService } from './event-idempotency.service';
 
 @Module({
   imports: [
@@ -21,6 +22,6 @@ import { InventoryRetryPublisher } from './inventory-retry.publisher';
     ]),
   ],
   controllers: [InventoryController],
-  providers: [InventoryRetryPublisher],
+  providers: [InventoryRetryPublisher, EventIdempotencyService],
 })
 export class InventoryModule {}
