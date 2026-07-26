@@ -61,8 +61,16 @@ export class InventoryController {
     console.log('Product ID:', event.data.productId);
     console.log('Retry count:', retryCount);
 
+    /*
+     * A duplicate means the business operation was
+     * already completed previously.
+     *
+     * It is therefore safe to commit and skip it.
+     */
     if (this.eventIdempotencyService.hasProcessed(event.eventId)) {
       console.warn(`Duplicate event skipped: ${event.eventId}`);
+
+      await this.commitCurrentOffset(context);
 
       console.log('--------------------------------');
 
@@ -72,17 +80,29 @@ export class InventoryController {
     try {
       await this.reserveInventory(event);
 
+      /*
+       * In a real application, inventory reservation
+       * and the processed-event record should be stored
+       * in one database transaction.
+       */
       this.eventIdempotencyService.markAsProcessed(event.eventId);
 
       console.log(`Inventory reserved for order ` + event.data.orderId);
 
       console.log(`Event marked as processed: ` + event.eventId);
+
+      /*
+       * Commit only after business processing and
+       * idempotency recording succeed.
+       */
+      await this.commitCurrentOffset(context);
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown inventory error';
 
       await this.handleFailure({
         event,
+        context,
         retryCount,
         sourceTopic: context.getTopic(),
         errorMessage,
@@ -108,6 +128,7 @@ export class InventoryController {
 
   private async handleFailure(options: {
     event: OrderCreatedEvent;
+    context: KafkaContext;
     retryCount: number;
     sourceTopic: string;
     errorMessage: string;
@@ -119,6 +140,9 @@ export class InventoryController {
         `Attempt ${nextRetryCount} failed. ` + 'Publishing to retry topic.',
       );
 
+      /*
+       * First publish the replacement retry record.
+       */
       await this.retryPublisher.publishRetry({
         event: options.event,
         orderId: options.event.data.orderId,
@@ -127,11 +151,21 @@ export class InventoryController {
         errorMessage: options.errorMessage,
       });
 
+      console.log('Retry record published successfully');
+
+      /*
+       * Only now can the source record be committed.
+       */
+      await this.commitCurrentOffset(options.context);
+
       return;
     }
 
-    console.error(`Maximum retries reached. ` + 'Publishing event to DLQ.');
+    console.error('Maximum retries reached. ' + 'Publishing event to DLQ.');
 
+    /*
+     * First safely publish the DLQ record.
+     */
     await this.retryPublisher.publishDlq({
       event: options.event,
       orderId: options.event.data.orderId,
@@ -139,6 +173,14 @@ export class InventoryController {
       sourceTopic: options.sourceTopic,
       errorMessage: options.errorMessage,
     });
+
+    console.log('DLQ record published successfully');
+
+    /*
+     * Commit the retry record only after
+     * the DLQ write succeeds.
+     */
+    await this.commitCurrentOffset(options.context);
   }
 
   private getRetryCount(headers: Record<string, unknown> | undefined): number {
@@ -174,6 +216,33 @@ export class InventoryController {
       status: event.data.status,
       partition: context.getPartition(),
       offset: message.offset,
+    });
+  }
+
+  private async commitCurrentOffset(context: KafkaContext): Promise<void> {
+    const message = context.getMessage();
+    const consumer = context.getConsumer();
+
+    const topic = context.getTopic();
+    const partition = context.getPartition();
+
+    const currentOffset = message.offset;
+
+    const nextOffset = (BigInt(currentOffset) + 1n).toString();
+
+    await consumer.commitOffsets([
+      {
+        topic,
+        partition,
+        offset: nextOffset,
+      },
+    ]);
+
+    console.log('Offset committed', {
+      topic,
+      partition,
+      processedOffset: currentOffset,
+      committedOffset: nextOffset,
     });
   }
 }

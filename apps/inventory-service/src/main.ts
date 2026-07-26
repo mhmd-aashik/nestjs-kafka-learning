@@ -17,6 +17,11 @@ async function bootstrap(): Promise<void> {
         consumer: {
           groupId: 'inventory-consumer-group',
         },
+
+        // Disable KafkaJS automatic offset commits.
+        run: {
+          autoCommit: false,
+        },
       },
     },
   );
